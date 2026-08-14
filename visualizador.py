@@ -8,7 +8,7 @@ def plotar_ambiente(ambiente):
     
     matriz_visual = [[0 for _ in range(ambiente.colunas)] for _ in range(ambiente.linhas)]
 
-    ax.imshow(matriz_visual, cmap="Greys", vmin=0, vmax=1)
+    ax.imshow(matriz_visual, cmap="Greys", vmin=0, vmax=1, origin="upper")
 
     # Percorre todas as posições da matriz.
     for linha in range(ambiente.linhas):
@@ -28,14 +28,19 @@ def plotar_ambiente(ambiente):
                 # Robô
                 ax.text(coluna, linha, "R", ha="center", va="center", fontsize=18, fontweight="bold", color="gold")
 
-    # Configura a grade da matriz.
-    ax.set_xticks(range(ambiente.colunas))
-    ax.set_yticks(range(ambiente.linhas))
+    
+    ax.set_xticks([i - 0.5 for i in range(ambiente.colunas + 1)], minor=True)
+
+    ax.set_yticks([i - 0.5 for i in range(ambiente.linhas + 1)], minor=True)
+
+    ax.grid(which="minor", color="black", linewidth=0.8)
 
     ax.set_xticklabels([])
+
     ax.set_yticklabels([])
 
-    ax.grid(True, linewidth=0.8)
+
+    ax.tick_params(which="both", length=0)
 
     ax.set_title("Estado inicial do ambiente")
 

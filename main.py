@@ -3,8 +3,8 @@ from visualizador import plotar_ambiente
 
 
 def main():
-    linhas = 5
-    colunas = 6
+    linhas = 10
+    colunas = 10
 
     ambiente = Ambiente(linhas, colunas)
 
