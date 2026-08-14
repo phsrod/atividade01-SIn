@@ -19,10 +19,7 @@ class Ambiente:
         posicoes = [(linha, coluna) for linha in range(self.linhas) for coluna in range(self.colunas)
         ]
 
-        posicoes_obstaculos = random.sample(
-            posicoes,
-            self.quantidade_obstaculos
-        )
+        posicoes_obstaculos = random.sample(posicoes, self.quantidade_obstaculos)
 
         for linha, coluna in posicoes_obstaculos:
             self.matriz[linha][coluna] = 1
