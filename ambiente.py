@@ -10,28 +10,48 @@ class Ambiente:
     def __init__(self, linhas, colunas):
         self.linhas = linhas
         self.colunas = colunas
-        self.matriz = [[0 for _ in range(colunas)] for _ in range(linhas)]
+        self.matriz = []
+
+        for i in range(linhas):
+            linha = []
+            for j in range(colunas):
+                linha.append(0)
+            self.matriz.append(linha)
+
         self.quantidade_obstaculos = int(linhas * colunas * 0.2)
         self.quantidade_sujeiras = int(linhas * colunas * 0.1)
         self.posicao_robo = None
 
     def gerar_ambiente(self):
-        posicoes = [(linha, coluna) for linha in range(self.linhas) for coluna in range(self.colunas)
-        ]
+        posicoes = []
 
-        posicoes_obstaculos = random.sample(posicoes, self.quantidade_obstaculos)
+        for linha in range(self.linhas):
+            for coluna in range(self.colunas):
+                posicoes.append((linha, coluna))
 
-        for linha, coluna in posicoes_obstaculos:
+        obstaculos = random.sample(posicoes, self.quantidade_obstaculos)
+
+        for linha, coluna in obstaculos:
             self.matriz[linha][coluna] = 1
 
-        posicoes_livres = [posicao for posicao in posicoes if posicao not in posicoes_obstaculos]
+        posicoes_livres = []
 
-        posicoes_sujeira = random.sample(posicoes_livres, self.quantidade_sujeiras)
+        for posicao in posicoes:
+            if posicao not in obstaculos:
+                posicoes_livres.append(posicao)
 
-        for linha, coluna in posicoes_sujeira:
+        sujeiras = random.sample(posicoes_livres, self.quantidade_sujeiras)
+
+        for linha, coluna in sujeiras:
             self.matriz[linha][coluna] = 2
 
-        posicoes_livres = [posicao for posicao in posicoes_livres if posicao not in posicoes_sujeira]
+        novas_posicoes_livres = []
+
+        for posicao in posicoes_livres:
+            if posicao not in sujeiras:
+                novas_posicoes_livres.append(posicao)
+
+        posicoes_livres = novas_posicoes_livres
 
         self.posicao_robo = random.choice(posicoes_livres)
 
@@ -39,7 +59,7 @@ class Ambiente:
         self.matriz[linha][coluna] = 3
 
     def mostrar_matriz(self):
-
         for linha in self.matriz:
             print(linha)
+            
 
