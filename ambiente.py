@@ -1,61 +1,51 @@
-# convencao:
-# 0 = espaço livre
-# 1 = obstáculo
-# 2 = sujeira
-# 3 = robô
-
 import random
 
 class Ambiente:
     def __init__(self, linhas, colunas):
         self.linhas = linhas
         self.colunas = colunas
-        self.matriz = []
+        self.matriz = [[0] * colunas for _ in range(linhas)]
 
-        for i in range(linhas):
-            linha = []
-            for j in range(colunas):
-                linha.append(0)
-            self.matriz.append(linha)
-
-        self.quantidade_obstaculos = int(linhas * colunas * 0.2)
-        self.quantidade_sujeiras = int(linhas * colunas * 0.1)
+        total = linhas * colunas
+        self.quantidade_obstaculos = int(total * 0.2)
+        self.quantidade_sujeiras = int(total * 0.1)
         self.posicao_robo = None
 
     def gerar_ambiente(self):
-        posicoes = []
+        total = self.linhas * self.colunas
 
-        for linha in range(self.linhas):
-            for coluna in range(self.colunas):
-                posicoes.append((linha, coluna))
+        quantidade_posicoes = (
+            self.quantidade_obstaculos
+            + self.quantidade_sujeiras
+            + 1
+        )
 
-        obstaculos = random.sample(posicoes, self.quantidade_obstaculos)
+        sorteados = random.sample(
+            range(total),
+            quantidade_posicoes
+        )
 
-        for linha, coluna in obstaculos:
+        inicio_sujeiras = self.quantidade_obstaculos
+        fim_sujeiras = inicio_sujeiras + self.quantidade_sujeiras
+
+        obstaculos = sorteados[:inicio_sujeiras]
+        sujeiras = sorteados[inicio_sujeiras:fim_sujeiras]
+        robo = sorteados[-1]
+
+        for posicao in obstaculos:
+            linha = posicao // self.colunas
+            coluna = posicao % self.colunas
             self.matriz[linha][coluna] = 1
 
-        posicoes_livres = []
-
-        for posicao in posicoes:
-            if posicao not in obstaculos:
-                posicoes_livres.append(posicao)
-
-        sujeiras = random.sample(posicoes_livres, self.quantidade_sujeiras)
-
-        for linha, coluna in sujeiras:
+        for posicao in sujeiras:
+            linha = posicao // self.colunas
+            coluna = posicao % self.colunas
             self.matriz[linha][coluna] = 2
 
-        novas_posicoes_livres = []
 
-        for posicao in posicoes_livres:
-            if posicao not in sujeiras:
-                novas_posicoes_livres.append(posicao)
-
-        posicoes_livres = novas_posicoes_livres
-
-        self.posicao_robo = random.choice(posicoes_livres)
-
-        linha, coluna = self.posicao_robo
+        linha = posicao // self.colunas
+        coluna = posicao % self.colunas
+        self.posicao_robo = (linha, coluna)
         self.matriz[linha][coluna] = 3
 
     def mostrar_matriz(self):
