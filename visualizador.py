@@ -1,5 +1,7 @@
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+from matplotlib.animation import FuncAnimation
 
 
 def calcular_tamanho_figura(ambiente):
@@ -49,10 +51,10 @@ def configurar_grade(ax, ambiente):
 
 def criar_mapa_cores():
     return ListedColormap([
-        "white",  # 0: espaço livre
-        "black",  # 1: obstáculo
+        "white",  # 0: espaco livre
+        "black",  # 1: obstaculo
         "blue",   # 2: sujeira
-        "red",    # 3: robô
+        "red",    # 3: robo
     ])
 
 
@@ -78,23 +80,37 @@ def plotar_ambiente(ambiente):
 
 
 def andar(posicao, restantes, caminho):
-    linha, coluna = posicao
+    stack = [(posicao, 0)]
 
-    vizinhos = [
-        (linha + 1, coluna),
-        (linha - 1, coluna),
-        (linha, coluna + 1),
-        (linha, coluna - 1),
-    ]
+    while stack:
+        pos, idx = stack[-1]
 
-    for vizinho in vizinhos:
-        if vizinho in restantes:
-            restantes.remove(vizinho)
-            caminho.append(vizinho)
+        if pos in restantes:
+            restantes.discard(pos)
+            caminho.append(pos)
 
-            andar(vizinho, restantes, caminho)
+        linha, coluna = pos
+        vizinhos = [
+            (linha + 1, coluna),
+            (linha - 1, coluna),
+            (linha, coluna + 1),
+            (linha, coluna - 1),
+        ]
 
-            caminho.append(posicao)
+        # procura proximo vizinho nao visitado
+        encontrou = False
+        while idx < 4:
+            if vizinhos[idx] in restantes:
+                stack[-1] = (pos, idx + 1)
+                stack.append((vizinhos[idx], 0))
+                encontrou = True
+                break
+            idx += 1
+
+        if not encontrou:
+            stack.pop()
+            if stack:
+                caminho.append(stack[-1][0])
 
 
 def gerar_caminho_continuo(visitados):
@@ -103,11 +119,15 @@ def gerar_caminho_continuo(visitados):
 
     restantes = set(visitados)
     primeira_posicao = visitados[0]
-
     restantes.remove(primeira_posicao)
 
     caminho = [primeira_posicao]
+    restantes.add(primeira_posicao)
     andar(primeira_posicao, restantes, caminho)
+
+    # remove duplicata da posicao inicial
+    if len(caminho) > 1 and caminho[0] == caminho[1]:
+        caminho.pop(1)
 
     return caminho
 
@@ -121,13 +141,20 @@ def animar_limpeza(ambiente, caminho, intervalo=0.05):
     largura, altura = calcular_tamanho_figura(ambiente)
     cores = criar_mapa_cores()
 
-    matriz_visual = [
-        linha[:]
-        for linha in ambiente.matriz
-    ]
+    matriz_visual = np.array(ambiente.matriz, dtype=int)
 
     linha_robo, coluna_robo = ambiente.posicao_robo
     matriz_visual[linha_robo][coluna_robo] = 0
+
+    total_passos = len(caminho)
+
+    # para grades grandes, multiplos passos por frame
+    passos_por_frame = max(1, total_passos // 5000)
+    total_frames = (total_passos + passos_por_frame - 1) // passos_por_frame
+
+    # intervalo adaptativo
+    fps = min(60, max(1, int(1 / intervalo))) if intervalo > 0 else 60
+    intervalo_ms = 1000 / fps
 
     fig, ax = plt.subplots(figsize=(largura, altura))
 
@@ -150,32 +177,45 @@ def animar_limpeza(ambiente, caminho, intervalo=0.05):
         color="red"
     )
 
-    ax.set_title("Animação da limpeza")
-    plt.tight_layout()
+    # plt.tight_layout()
+    indice_global = [0]
+    posicao_anterior = [None]
+    ultima_posicao = [linha_robo, coluna_robo]
 
-    plt.ion()
-    plt.show()
+    def atualizar(frame):
+        inicio = indice_global[0]
+        fim = min(inicio + passos_por_frame, total_passos)
 
-    posicao_anterior = None
+        for k in range(inicio, fim):
+            linha, coluna = caminho[k]
 
-    for linha, coluna in caminho:
-        if posicao_anterior is not None:
-            linha_anterior, coluna_anterior = posicao_anterior
+            if posicao_anterior[0] is not None:
+                la, ca = posicao_anterior[0]
+                if matriz_visual[la][ca] == 3:
+                    matriz_visual[la][ca] = 0
 
-            if matriz_visual[linha_anterior][coluna_anterior] == 3:
-                matriz_visual[linha_anterior][coluna_anterior] = 0
+            if matriz_visual[linha][coluna] == 2:
+                matriz_visual[linha][coluna] = 0
 
-        if matriz_visual[linha][coluna] == 2:
-            matriz_visual[linha][coluna] = 0
+            matriz_visual[linha][coluna] = 3
+            posicao_anterior[0] = (linha, coluna)
+            ultima_posicao[0] = linha
+            ultima_posicao[1] = coluna
 
-        matriz_visual[linha][coluna] = 3
+        indice_global[0] = fim
 
-        robo.set_data([coluna], [linha])
+        robo.set_data([ultima_posicao[1]], [ultima_posicao[0]])
         imagem.set_data(matriz_visual)
 
-        posicao_anterior = (linha, coluna)
+        return robo, imagem
 
-        plt.pause(intervalo)
+    anim = FuncAnimation(
+        fig,
+        atualizar,
+        frames=total_frames,
+        interval=intervalo_ms,
+        blit=True,
+        repeat=False,
+    )
 
-    plt.ioff()
     plt.show()

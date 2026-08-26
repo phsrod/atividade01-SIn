@@ -1,3 +1,6 @@
+import sys
+sys.setrecursionlimit(2_000_000)
+
 from ambiente import Ambiente
 from robo_dfs import robo_limpeza, visitados
 from visualizador import plotar_ambiente, animar_limpeza
@@ -5,8 +8,8 @@ from visualizador import plotar_ambiente, animar_limpeza
 def main():
     linhas = 1000
     colunas = 1000
-    intervalo = 0.2
-    opcao = 1
+    intervalo = 0.1
+    opcao = 2
     ambiente = Ambiente(linhas, colunas)
 
     ambiente.gerar_ambiente()
