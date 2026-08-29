@@ -1,8 +1,8 @@
-# Direções possíveis do robô: nome -> (delta_linha, delta_coluna)
-# Usamos o MESMO delta tanto para a posição real (dentro do ambiente)
-# quanto para a posição relativa do robô (dentro do mapa mental dele).
-# Assim as duas coordenadas andam sempre em sincronia, mas o robô nunca
-# precisa saber o valor real de sua posição para tomar decisões.
+# # Direções possíveis do robô: nome -> (delta_linha, delta_coluna)
+# # Usamos o MESMO delta tanto para a posição real (dentro do ambiente)
+# # quanto para a posição relativa do robô (dentro do mapa mental dele).
+# # Assim as duas coordenadas andam sempre em sincronia, mas o robô nunca
+# # precisa saber o valor real de sua posição para tomar decisões.
 
 DIRECOES = {
     "cima": (-1, 0),
@@ -12,35 +12,29 @@ DIRECOES = {
 }
 
 
-def sentir(matriz, linhas, colunas, linha_real, coluna_real):
+def sentir(matriz_com_borda, linha_p, coluna_p):
     """
-    Sensor do robô: dado APENAS a posição real atual (usada só para saber
-    o que existe fisicamente ao redor, nunca exposta à lógica de decisão),
-    devolve o que existe nas 4 direções adjacentes.
+    Sensor do robô: recebe a posição atual DENTRO DA MATRIZ COM BORDA
+    (ver robo_limpeza_dfs) e devolve o que existe nas 4 direções.
 
-    "matriz" aqui é a CÓPIA DE TRABALHO (o "mundo físico" que o robô de
-    fato percorre e limpa) — nunca a matriz original do ambiente. Isso
-    mantém a matriz original intacta, para o visualizador poder mostrar
-    onde a sujeira estava e simular a limpeza célula a célula durante a
-    animação.
-
-    Fora dos limites da matriz é tratado como obstáculo (parede/limite
-    físico do ambiente) — o robô não sabe o tamanho da matriz, só descobre
-    "bater na parede" quando tenta sentir/andar para lá.
+    Importante: essa função NÃO faz nenhuma comparação com o tamanho da
+    matriz. A matriz recebida já vem cercada por uma moldura de obstáculos
+    de verdade (valor 1), então "sair do ambiente real" e "esbarrar num
+    obstáculo interno" são, aqui, exatamente a mesma operação: olhar
+    matriz_com_borda[nl][nc] e achar o valor 1. O sensor nunca sabe (nem
+    precisa saber) se aquele obstáculo é uma parede do mundo ou um
+    obstáculo sorteado no meio do caminho — para ele são a mesma coisa.
     """
     percepcoes = {}
     for nome, (dl, dc) in DIRECOES.items():
-        nl, nc = linha_real + dl, coluna_real + dc
-        if nl < 0 or nl >= linhas or nc < 0 or nc >= colunas:
+        nl, nc = linha_p + dl, coluna_p + dc
+        valor = matriz_com_borda[nl][nc]
+        if valor == 1:
             percepcoes[nome] = "obstaculo"
+        elif valor == 2:
+            percepcoes[nome] = "sujeira"
         else:
-            valor = matriz[nl][nc]
-            if valor == 1:
-                percepcoes[nome] = "obstaculo"
-            elif valor == 2:
-                percepcoes[nome] = "sujeira"
-            else:
-                percepcoes[nome] = "livre"
+            percepcoes[nome] = "livre"
     return percepcoes
 
 
@@ -59,12 +53,17 @@ def robo_limpeza_dfs(ambiente, linha_inicial, coluna_inicial):
          exatamente como uma pilha de chamadas de DFS recursivo faria -
          só que aqui de forma iterativa, um movimento por vez.
 
-    Importante: o robô nunca limpa a `ambiente.matriz` original. Ele opera
-    sobre uma CÓPIA DE TRABALHO própria (o "mundo físico" que ele percorre
-    e limpa de fato). A `ambiente.matriz` original fica intacta, com a
-    sujeira nas posições originais, justamente para o visualizador poder
-    desenhar o estado inicial correto e simular a limpeza acontecendo aos
-    poucos, célula por célula, conforme o robô avança no caminho.
+    Como o ambiente termina sem paredes explícitas: em vez de o sensor
+    comparar índices com "linhas"/"colunas" (o que dava a impressão de
+    estar consultando o tamanho do mapa, mesmo sem vazar essa informação
+    pra decisão do robô), aqui construímos uma CÓPIA DE TRABALHO cercada
+    por uma moldura de obstáculos de verdade (valor 1) ao redor de toda a
+    borda. Isso é feito UMA ÚNICA VEZ, na "criação do mundo", antes do
+    robô dar o primeiro passo — o mesmo tipo de operação que ambiente.py
+    já faz ao sortear os obstáculos internos. A partir daí, o sensor nunca
+    mais faz nenhuma conta com o tamanho da matriz: sair do ambiente real
+    e bater num obstáculo interno viram, literalmente, a mesma leitura de
+    valor 1 numa célula.
 
     Retorna:
         caminho_real: lista de posições reais (linha, coluna), na ORDEM
@@ -74,28 +73,35 @@ def robo_limpeza_dfs(ambiente, linha_inicial, coluna_inicial):
         sujeiras_limpas: quantidade de sujeiras efetivamente limpas.
         mapa_mental: o mapa que o robô construiu sozinho, para depuração.
     """
-    linhas, colunas = ambiente.linhas, ambiente.colunas
-
-    # cópia de trabalho: é NELA que o robô efetivamente "limpa" a sujeira.
-    # a ambiente.matriz original permanece intacta para a visualização.
+    colunas = ambiente.colunas
     matriz_trabalho = [linha[:] for linha in ambiente.matriz]
 
-    linha_real, coluna_real = linha_inicial, coluna_inicial
+    # moldura de obstáculos ao redor da cópia de trabalho
+    largura_com_borda = colunas + 2
+    matriz_com_borda = [[1] * largura_com_borda]
+    for linha in matriz_trabalho:
+        matriz_com_borda.append([1] + linha + [1])
+    matriz_com_borda.append([1] * largura_com_borda)
+
+    # toda posição real (linha_real, coluna_real) corresponde a
+    # (linha_real + 1, coluna_real + 1) dentro da matriz com borda —
+    # um deslocamento fixo, não uma consulta ao tamanho do ambiente
+    linha_p, coluna_p = linha_inicial + 1, coluna_inicial + 1
     pos_rel = (0, 0)
 
     mapa_mental = {}       # posicao_relativa -> 'livre'|'obstaculo'|'sujeira'|'limpo'
     visitados = set()      # posicoes relativas onde o robo JA esteve fisicamente
     nao_tentadas = {}       # posicao_relativa -> lista de direcoes ainda por tentar
     pilha_caminho = [pos_rel]     # caminho relativo atual (permite recuar)
-    caminho_real = [(linha_real, coluna_real)]
+    caminho_real = [(linha_inicial, coluna_inicial)]
     sujeiras_limpas = 0
 
     while pilha_caminho:
         atual = pilha_caminho[-1]
         ax, ay = atual
 
-        # 1) sentir o que existe ao redor da posição real correspondente
-        percepcoes = sentir(matriz_trabalho, linhas, colunas, linha_real, coluna_real)
+        # 1) sentir o que existe ao redor da posição atual (na matriz com borda)
+        percepcoes = sentir(matriz_com_borda, linha_p, coluna_p)
 
         # 2) atualizar o mapa mental com o que foi percebido agora
         for nome, (dl, dc) in DIRECOES.items():
@@ -103,13 +109,13 @@ def robo_limpeza_dfs(ambiente, linha_inicial, coluna_inicial):
             if vizinho_rel not in mapa_mental:
                 mapa_mental[vizinho_rel] = percepcoes[nome]
 
-        # 3) primeira vez nesta célula? limpa se estiver suja (na cópia de
-        #    trabalho) e calcula quais direções ainda podem ser exploradas
+        # 3) primeira vez nesta célula? limpa se estiver suja e calcula
+        #    quais direções ainda podem ser exploradas a partir daqui
         if atual not in visitados:
             visitados.add(atual)
 
-            if matriz_trabalho[linha_real][coluna_real] == 2:
-                matriz_trabalho[linha_real][coluna_real] = 0
+            if matriz_com_borda[linha_p][coluna_p] == 2:
+                matriz_com_borda[linha_p][coluna_p] = 0
                 mapa_mental[atual] = "limpo"
                 sujeiras_limpas += 1
             elif mapa_mental.get(atual) != "limpo":
@@ -128,12 +134,12 @@ def robo_limpeza_dfs(ambiente, linha_inicial, coluna_inicial):
             direcao = nao_tentadas[atual].pop(0)
             dl, dc = DIRECOES[direcao]
 
-            linha_real += dl
-            coluna_real += dc
+            linha_p += dl
+            coluna_p += dc
             pos_rel = (ax + dl, ay + dc)
 
             pilha_caminho.append(pos_rel)
-            caminho_real.append((linha_real, coluna_real))
+            caminho_real.append((linha_p - 1, coluna_p - 1))  # de volta às coordenadas reais (sem borda)
 
         # 5) sem mais direções: recua um passo fisicamente (backtrack do DFS)
         else:
@@ -142,8 +148,8 @@ def robo_limpeza_dfs(ambiente, linha_inicial, coluna_inicial):
                 anterior = pilha_caminho[-1]
                 dl = anterior[0] - ax
                 dc = anterior[1] - ay
-                linha_real += dl
-                coluna_real += dc
-                caminho_real.append((linha_real, coluna_real))
+                linha_p += dl
+                coluna_p += dc
+                caminho_real.append((linha_p - 1, coluna_p - 1))
 
     return caminho_real, sujeiras_limpas, mapa_mental
