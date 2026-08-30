@@ -1,10 +1,4 @@
-# Direções possíveis do robô: nome -> (delta_linha, delta_coluna)
-DIRECOES = {
-    "cima": (-1, 0),
-    "baixo": (1, 0),
-    "esquerda": (0, -1),
-    "direita": (0, 1),
-}
+DIRECOES = {"cima": (-1, 0), "baixo": (1, 0), "esquerda": (0, -1), "direita": (0, 1),}
 
 
 class SensorAmbiente:
@@ -77,15 +71,15 @@ def robo_limpeza_dfs(sensor, linha_inicial, coluna_inicial):
     assinatura de nenhum método disponível aqui.
 
     "linha_inicial"/"coluna_inicial" são a posição real onde o robô nasceu
-    (um fato físico inevitável — todo corpo físico ocupa algum lugar),
+    (um fato físico inevitável, todo corpo físico ocupa algum lugar),
     usada apenas para inicializar onde o sensor deve consultar a cada
     passo. A lógica de decisão em si (a escolha de direções) nunca usa
-    esses valores — só usa o mapa mental e a posição relativa.
+    esses valores, só usa o mapa mental e a posição relativa. 
 
     Retorna:
         caminho_real: lista de posições reais (linha, coluna), na ORDEM
                        exata em que o robô fisicamente passou por elas
-                       (inclusive recuos) — pronta para animar sem
+                       (inclusive recuos), pronta para animar sem
                        nenhum pós-processamento.
         sujeiras_limpas: quantidade de sujeiras efetivamente limpas.
         mapa_mental: o mapa que o robô construiu sozinho, para depuração.
@@ -104,8 +98,7 @@ def robo_limpeza_dfs(sensor, linha_inicial, coluna_inicial):
         atual = pilha_caminho[-1]
         ax, ay = atual
 
-        # 1) sentir o que existe ao redor da posição atual — só através
-        #    do sensor, nunca lendo uma matriz diretamente
+        # 1) sentir o que existe ao redor da posição atual — só através do sensor, nunca lendo uma matriz diretamente
         percepcoes = sensor.sentir(linha_p, coluna_p)
 
         # 2) atualizar o mapa mental com o que foi percebido agora
@@ -114,9 +107,7 @@ def robo_limpeza_dfs(sensor, linha_inicial, coluna_inicial):
             if vizinho_rel not in mapa_mental:
                 mapa_mental[vizinho_rel] = percepcoes[nome]
 
-        # 3) primeira vez nesta célula? pede ao sensor para limpar se
-        #    estiver suja, e calcula quais direções ainda podem ser
-        #    exploradas a partir daqui
+        # 3) primeira vez nesta célula? pede ao sensor para limpar se estiver suja, e calcula quais direções ainda podem ser exploradas a partir daqui
         if atual not in visitados:
             visitados.add(atual)
 

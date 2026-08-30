@@ -27,21 +27,11 @@ def configurar_grade(ax, linhas, colunas):
     ax.set_xticks(range(colunas))
     ax.set_yticks(range(linhas))
 
-    ax.set_xticks(
-        [i - 0.5 for i in range(colunas + 1)],
-        minor=True
-    )
+    ax.set_xticks([i - 0.5 for i in range(colunas + 1)], minor=True)
 
-    ax.set_yticks(
-        [i - 0.5 for i in range(linhas + 1)],
-        minor=True
-    )
+    ax.set_yticks([i - 0.5 for i in range(linhas + 1)], minor=True)
 
-    ax.grid(
-        which="minor",
-        color="black",
-        linewidth=0.8
-    )
+    ax.grid(which="minor", color="black", linewidth=0.8)
 
     ax.set_xticklabels([])
     ax.set_yticklabels([])
@@ -59,9 +49,7 @@ def criar_mapa_cores():
 
 
 def plotar_ambiente(ambiente):
-    # ambiente.matriz já vem pronta com a moldura de obstáculos ao redor
-    # (ver ambiente.py) — aqui só exibimos ela como está, sem reconstruir
-    # nada.
+    # ambiente.matriz já vem pronta com a moldura de obstáculos ao redor (ver ambiente.py) — aqui só exibimos ela como está, sem reconstruir nada.
     linhas_exib = len(ambiente.matriz)
     colunas_exib = len(ambiente.matriz[0])
 
@@ -70,14 +58,7 @@ def plotar_ambiente(ambiente):
 
     fig, ax = plt.subplots(figsize=(largura, altura))
 
-    ax.imshow(
-        ambiente.matriz,
-        cmap=cores,
-        vmin=0,
-        vmax=3,
-        interpolation="nearest",
-        origin="upper"
-    )
+    ax.imshow(ambiente.matriz, cmap=cores, vmin=0, vmax=3, interpolation="nearest", origin="upper")
 
     configurar_grade(ax, linhas_exib, colunas_exib)
 
@@ -86,11 +67,7 @@ def plotar_ambiente(ambiente):
 
 
 def animar_limpeza(ambiente, caminho, intervalo=0.05):
-    # "caminho" vem pronto do robô: a sequência real de posições por onde
-    # ele passou fisicamente, passo a passo, incluindo os recuos do
-    # backtracking do DFS. Essas posições estão em coordenadas da ÁREA
-    # ÚTIL (sem moldura) — por isso somamos +1 abaixo, para alinhar com
-    # ambiente.matriz, que já inclui a moldura.
+    # "caminho" vem pronto do robô: a sequência real de posições por onde ele passou fisicamente, passo a passo, incluindo os recuos do backtracking do DFS. Essas posições estão em coordenadas da ÁREA ÚTIL (sem moldura) — por isso somamos +1 abaixo, para alinhar com ambiente.matriz, que já inclui a moldura.
     if not caminho:
         return
 
@@ -118,24 +95,11 @@ def animar_limpeza(ambiente, caminho, intervalo=0.05):
 
     fig, ax = plt.subplots(figsize=(largura, altura))
 
-    imagem = ax.imshow(
-        matriz_visual,
-        cmap=cores,
-        vmin=0,
-        vmax=3,
-        interpolation="nearest",
-        origin="upper"
-    )
+    imagem = ax.imshow(matriz_visual, cmap=cores, vmin=0, vmax=3, interpolation="nearest", origin="upper")
 
     configurar_grade(ax, linhas_exib, colunas_exib)
 
-    robo, = ax.plot(
-        coluna_robo_exib,
-        linha_robo_exib,
-        marker="o",
-        markersize=6,
-        color="red"
-    )
+    robo, = ax.plot(coluna_robo_exib, linha_robo_exib, marker="o", markersize=6, color="red")
 
     indice_global = [0]
     posicao_anterior = [None]
@@ -169,13 +133,6 @@ def animar_limpeza(ambiente, caminho, intervalo=0.05):
 
         return robo, imagem
 
-    anim = FuncAnimation(
-        fig,
-        atualizar,
-        frames=total_frames,
-        interval=intervalo_ms,
-        blit=True,
-        repeat=False,
-    )
+    anim = FuncAnimation(fig, atualizar, frames=total_frames, interval=intervalo_ms, blit=True,repeat=False,)
 
     plt.show()
