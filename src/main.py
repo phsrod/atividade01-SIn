@@ -4,8 +4,8 @@ from visualizador import plotar_ambiente, animar_limpeza
 
 
 def main():
-    linhas = 5
-    colunas = 5
+    linhas = 1000
+    colunas = 1000
     intervalo = 0.0001  # intervalo de tempo entre os passos da animação (em segundos)
     opcao = 2
     ambiente = Ambiente(linhas, colunas)
