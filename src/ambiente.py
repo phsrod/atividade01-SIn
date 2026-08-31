@@ -1,5 +1,13 @@
 import random
 
+DIRECOES = {
+    "cima": (-1, 0),
+    "baixo": (1, 0),
+    "esquerda": (0, -1),
+    "direita": (0, 1),
+}
+
+
 class Ambiente:
     def __init__(self, linhas, colunas):
         # "linhas" e "colunas" representam a AREA UTIL do ambiente (onde obstaculos, sujeiras e o robo sao sorteados). A matriz real tem 2 linhas e 2 colunas a mais, porque nasce cercada por uma moldura de obstaculos (paredes) em toda a borda externa.
@@ -46,6 +54,50 @@ class Ambiente:
         # posicao_robo fica em coordenadas da AREA UTIL (sem moldura), para o resto do sistema continuar tratando (0,0) como o canto real do ambiente, independente de como a matriz interna esta organizada.
         self.posicao_robo = (linha_robo, coluna_robo)
         self.matriz[linha_robo + 1][coluna_robo + 1] = 3
+
+        # Estado usado durante a execução. A matriz original é preservada
+        # para que o visualizador possa animar a limpeza posteriormente.
+        self._matriz_trabalho = [linha[:] for linha in self.matriz]
+        self._linha_robo = linha_robo + 1
+        self._coluna_robo = coluna_robo + 1
+        self._caminho_real = [self.posicao_robo]
+
+    def sentir_arredores(self):
+        """Retorna apenas o conteúdo das quatro células adjacentes."""
+        percepcoes = {}
+        for nome, (dl, dc) in DIRECOES.items():
+            valor = self._matriz_trabalho[self._linha_robo + dl][self._coluna_robo + dc]
+            if valor == 1:
+                percepcoes[nome] = "obstaculo"
+            elif valor == 2:
+                percepcoes[nome] = "sujeira"
+            else:
+                percepcoes[nome] = "livre"
+        return percepcoes
+
+    def mover_robo(self, direcao):
+        """Executa um movimento físico, se a direção não estiver bloqueada."""
+        dl, dc = DIRECOES[direcao]
+        nova_linha = self._linha_robo + dl
+        nova_coluna = self._coluna_robo + dc
+        if self._matriz_trabalho[nova_linha][nova_coluna] == 1:
+            return False
+
+        self._linha_robo = nova_linha
+        self._coluna_robo = nova_coluna
+        self._caminho_real.append((nova_linha - 1, nova_coluna - 1))
+        return True
+
+    def limpar_posicao_robo(self):
+        """Limpa a célula onde o robô está, se houver sujeira."""
+        if self._matriz_trabalho[self._linha_robo][self._coluna_robo] == 2:
+            self._matriz_trabalho[self._linha_robo][self._coluna_robo] = 0
+            return True
+        return False
+
+    def caminho_real(self):
+        """Registro do ambiente para uso exclusivo da visualização."""
+        return self._caminho_real[:]
 
     def mostrar_matriz(self):
         for linha in self.matriz:
