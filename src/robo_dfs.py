@@ -102,8 +102,7 @@ def robo_limpeza_dfs(sensor):
             dl, dc = DIRECOES[direcao]
 
             pos_rel = (ax + dl, ay + dc)
-            if not sensor.mover(direcao):
-                raise RuntimeError("O sensor informou caminho livre e bloqueou o movimento.")
+            sensor.mover(direcao)
             pilha_caminho.append(pos_rel)
 
         # 5) sem mais direções: recua um passo fisicamente (backtrack do DFS)
@@ -117,7 +116,6 @@ def robo_limpeza_dfs(sensor):
                     nome for nome, deslocamento in DIRECOES.items()
                     if deslocamento == (dl, dc)
                 )
-                if not sensor.mover(direcao_recuo):
-                    raise RuntimeError("Não foi possível recuar para uma célula já visitada.")
+                sensor.mover(direcao_recuo)
 
     return sujeiras_limpas, mapa_mental
